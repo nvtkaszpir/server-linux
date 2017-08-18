@@ -4,17 +4,17 @@
 # by Empezar
 
 # Parameters: --random-mirror --restart --no-restart
-
+TEMPDIR=$(mktemp -d nquake-update_maps.XXXXXX)
 # Check if unzip is installed
-unzip=`which unzip`
-if [ "$unzip"  = "" ]
+which unzip > /dev/null 2>&1
+if [ ! $? ]
 then
         echo "Unzip is not installed. Please install it and run the nQuakesv installation again."
-        exit
+        exit 1
 fi
 
 # Change folder to nQuakesv
-cd `cat ~/.nquakesv/install_dir`
+cd "$(cat ~/.nquakesv/install_dir)"
 
 echo
 echo "Welcome to the nQuakesv maps updater"
@@ -22,17 +22,14 @@ echo "===================================="
 echo
 
 # Download nquake.ini
-mkdir -p tmp
-cd tmp
+cd "${TEMPDIR}"
 wget --inet4-only -q -O nquake.ini http://nquake.sourceforge.net/nquake.ini
-if [ -s "nquake.ini" ]
+if [ ! $? ]
 then
-        echo foo >> /dev/null
-else
         echo "Error: Could not download nquake.ini. Better luck next time. Exiting."
 	cd ..
-	rm -rf tmp
-        exit
+	rm -rf "${TEMPDIR}"
+        exit 1
 fi
 
 # List all the available mirrors
@@ -61,12 +58,12 @@ echo
 
 # Download maps
 echo "=== Downloading ==="
-wget --inet4-only -O sv-maps.zip $mirror/sv-maps.zip
+wget --inet4-only -O sv-maps.zip "${mirror}/sv-maps.zip"
 if [ -s "sv-maps.zip" ]
 then
         if [ "$(du sv-maps.zip | cut -f1)" \> "0" ]
         then
-                wget --inet4-only -O sv-maps-gpl.zip $mirror/sv-maps-gpl.zip
+                wget --inet4-only -O sv-maps-gpl.zip "${mirror}/sv-maps-gpl.zip"
         fi
 fi
 
@@ -79,14 +76,14 @@ then
         else
                 echo "Error: The maps failed to download. Better luck next time. Exiting."
                 cd ..
-		rm -rf tmp
-                exit
+		rm -rf "${TEMPDIR}"
+                exit 1
         fi
 else
         echo "Error: The maps failed to download. Better luck next time. Exiting."
 	cd ..
-	rm -rf tmp
-        exit
+	rm -rf "${TEMPDIR}"
+        exit 1
 fi
 
 # Ask to restart servers
@@ -126,7 +123,7 @@ echo "done"
 # Remove temporary directory
 echo -n "* Cleaning up..."
 cd ..
-rm -rf tmp
+rm -rf "${TEMPDIR}"
 echo "done"
 
 # Restart servers
@@ -136,5 +133,6 @@ then
         ./start_servers.sh > /dev/null 2>&1
 fi
 
-echo;echo "Update complete."
+echo
+echo "Update complete."
 echo

@@ -4,17 +4,17 @@
 # by Empezar
 
 # Parameters: --random-mirror --restart --no-restart --sure
-
+TEMPDIR=$(mktemp -d nquake-update_configs.XXXXXX)
 # Check if unzip is installed
-unzip=`which unzip`
-if [ "$unzip"  = "" ]
+which unzip > /dev/null 2>&1
+if [ ! $? ]
 then
         echo "Unzip is not installed. Please install it and run the nQuakesv installation again."
-        exit
+        exit 1
 fi
 
 # Change folder to nQuakesv
-cd `cat ~/.nquakesv/install_dir`
+cd "$(cat ~/.nquakesv/install_dir)"
 
 echo
 echo "Welcome to the nQuakesv config updater"
@@ -22,17 +22,14 @@ echo "======================================"
 echo
 
 # Download nquake.ini
-mkdir tmp
-cd tmp
+cd "${TEMPDIR}"
 wget --inet4-only -q -O nquake.ini http://nquake.sourceforge.net/nquake.ini
-if [ -s "nquake.ini" ]
+if [ ! $? ]
 then
-        echo foo >> /dev/null
-else
         echo "Error: Could not download nquake.ini. Better luck next time. Exiting."
 	cd ..
-	rm -rf tmp
-        exit
+	rm -rf "${TEMPDIR}"
+        exit 1
 fi
 
 # List all the available mirrors
@@ -44,27 +41,27 @@ else
         read -p "Enter mirror number [random]: " mirror
 fi
 mirror=$(grep "^$mirror=[fhtp]\{3,4\}://[^ ]*$" nquake.ini | cut -d "=" -f2)
-if [ "$mirror" = "" ]
+if [ "${mirror}" = "" ]
 then
         echo;echo -n "* Using mirror: "
         RANGE=$(expr$(grep "[0-9]\{1,2\}=\".*" nquake.ini | cut -d "\"" -f2 | nl | tail -n1 | cut -f1) + 1)
-        while [ "$mirror" = "" ]
+        while [ "${mirror}" = "" ]
         do
                 number=$RANDOM
                 let "number %= $RANGE"
                 mirror=$(grep "^$number=[fhtp]\{3,4\}://[^ ]*$" nquake.ini | cut -d "=" -f2)
                 mirrorname=$(grep "^$number=\".*" nquake.ini | cut -d "\"" -f2)
         done
-        echo "$mirrorname"
+        echo "${mirrorname}"
 fi
 echo
 
 # Download maps
 echo "=== Downloading ==="
-wget --inet4-only -O sv-configs.zip $mirror/sv-configs.zip
+wget --inet4-only -O sv-configs.zip ${mirror}/sv-configs.zip
 
 # Terminate installation if not all packages were downloaded
-if [ -s "sv-configs.zip" ]
+if [ $? ]
 then
         if [ "$(du sv-configs.zip | cut -f1)" \> "0" ]
         then
@@ -72,14 +69,14 @@ then
         else
                 echo "Error: The configs failed to download. Better luck next time. Exiting."
                 cd ..
-		rm -rf tmp
-                exit
+		rm -rf "${TEMPDIR}"
+                exit 1
         fi
 else
         echo "Error: The configs failed to download. Better luck next time. Exiting."
 	cd ..
-	rm -rf tmp
-        exit
+	rm -rf "${TEMPDIR}"
+        exit 1
 fi
 
 # Ask to restart servers
@@ -106,10 +103,10 @@ echo "done"
 echo -n "* Converting DOS files to UNIX..."
 for file in $(find .)
 do
-        if [ -f "$file" ]
+        if [ -f "${file}" ]
         then
-                awk '{ sub("\r$", ""); print }' $file > /tmp/.nquakesv.tmp
-                mv /tmp/.nquakesv.tmp $file
+                awk '{ sub("\r$", ""); print }' "${file}" > "${TEMPDIR}"/.nquakesv.tmp
+                mv "${TEMPDIR}"/.nquakesv.tmp "${file}"
         fi
 done
 echo "done"
@@ -125,8 +122,10 @@ fi
 if [ "$1" == "--sure" ] || [ "$2" == "--sure" ] || [ "$3" == "--sure" ] || [ "$4" == "--sure" ]; then
         sure="y"
 else
-        echo;echo "Your old configuration files will now be removed and replaced. The settings that you picked during setup will be untouched."
-        echo;read -p "Are you sure you want to continue? (y/n) [y]: " sure
+        echo
+        echo "Your old configuration files will now be removed and replaced. The settings that you picked during setup will be untouched."
+        echo
+        read -p "Are you sure you want to continue? (y/n) [y]: " sure
         echo
 fi
 if [ "$sure" != "n" ]
@@ -142,7 +141,7 @@ fi
 # Remove temporary directory
 echo -n "* Cleaning up..."
 cd ..
-rm -rf tmp
+rm -rf "${TEMPDIR}"
 echo "done"
 
 # Restart servers
@@ -152,5 +151,6 @@ then
         ./start_servers.sh > /dev/null 2>&1
 fi
 
-echo;echo "Update complete."
+echo
+echo "Update complete."
 echo

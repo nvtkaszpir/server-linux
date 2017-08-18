@@ -1,7 +1,7 @@
 #!/bin/sh
-# nQuakesv Installer Script v1.7 (for Linux)
+# nQuakesv Installer Script v1.8 (for Linux)
 # by Empezar & dimman
-nqversion="1.7"
+nqversion="1.8"
 
 # Usage info
 show_help() {
@@ -145,8 +145,8 @@ error() {
   [ "${created}" -eq 1 ] && {
     cd
     nqeecho "The directory ${directory} is about to be removed, press ENTER to confirm or CTRL+C to exit."
-    read dummy
-    rm -rf ${directory}
+    read
+    rm -rf "${directory}"
   }
   exit 1
 }
@@ -178,8 +178,8 @@ nqwget() {
 githubdl() {
   localpath=$1
   remotepath=$2
-  nqwget -q -O ${localpath} https://raw.githubusercontent.com/nQuake/server-linux/master/${remotepath}
-  chmod +x ${localpath}
+  nqwget -q -O "${localpath}" "https://raw.githubusercontent.com/nQuake/server-linux/master/${remotepath}"
+  chmod +x "${localpath}"
 }
 
 # Check if unzip, curl, wget and screen is installed
@@ -198,55 +198,55 @@ nqiecho
 # Interactive stuff
 [ -z "${noninteractive}" ] && {
   # Install dir
-  printf "Where do you want to install nQuakesv? [${defaultdir}]: "
+  printf "Where do you want to install nQuakesv? [%s]: " "${defaultdir}"
   read directory
-  eval directory=${directory}
+  eval directory="${directory}"
 
   # Hostname
-  printf "Enter a descriptive hostname [${defaulthostname}]: "
+  printf "Enter a descriptive hostname [%s]: " "${defaulthostname}"
   read hostname
 
   # IP/dns
   [ -z "${nqipaddr}" ] && {
           printf "Enter your server's DNS. [use external IP]: "
   } || {
-          printf "Enter your server's DNS. [${nqipaddr}]: "
+          printf "Enter your server's DNS. [%s]: " "${nqipaddr}"
   }
   read hostdns
 
   # Ports
-  printf "How many ports of KTX do you wish to run (max 10)? [${defaultports}]: "
+  printf "How many ports of KTX do you wish to run (max 10)? [%s]: " "${defaultports}"
   read ports
 
   # Rcon
-  printf "What should the rcon password be? [${defaultrcon}]: "
+  printf "What should the rcon password be? [%s]: " "${defaultrcon}"
   read rcon
 
   # QTV
-  printf "Do you wish to run a qtv proxy? (y/n) [${defaultqtv}]: "
+  printf "Do you wish to run a qtv proxy? (y/n) [%s]: " "${defaultqtv}"
   read qtv
   [ "${qtv}" = "y" ] && {
-    printf "What should the qtv admin password be? [${defaultqtvpass}]: "
+    printf "What should the qtv admin password be? [%s]: " "${defaultqtvpass}"
     read qtvpass
   }
 
   # QWFWD
-  printf "Do you wish to run a qwfwd proxy? (y/n) [${defaultqwfwd}]: "
+  printf "Do you wish to run a qwfwd proxy? (y/n) [%s]: " "${defaultqwfwd}"
   read qwfwd
 
   # Admin name
-  printf "Who is the admin of this server? [${defaultadmin}]: "
+  printf "Who is the admin of this server? [%s]: " "${defaultadmin}"
   read admin
 
   # Admin email
-  printf "What is the admin's e-mail? [${defaultemail}]: "
+  printf "What is the admin's e-mail? [%s]: " "${defaultemail}"
   read email
 
   # Search for Pak1
-  printf "Do you want setup to search for pak1.pak? (y/n) [${defaultsearchoption}]: "
+  printf "Do you want setup to search for pak1.pak? (y/n) [%s]: " "${defaultsearchoption}"
   read search
-  [ "${search}" == "y" ] || (["${defaultsearchoption}" == "y" ] && [ -z "${search}" ]) && {
-    printf "Enter path to recursively search for pak1.pak [${defaultsearchdir}]: "
+  [ "${search}" = "y" ] || ([ "${defaultsearchoption}" = "y" ] && [ -z "${search}" ]) && {
+    printf "Enter path to recursively search for pak1.pak [$%s]: " "{defaultsearchdir}"
     read path
   }
 }
@@ -256,7 +256,7 @@ nqecho
 nqiecho "Please review the following settings:"
 nqecho "========================================="
 # Set defaults if nothing was entered (non-interactive mode or just use defaults)
-[ -z "${directory}" ] && eval directory=${defaultdir}
+[ -z "${directory}" ] && eval directory="${defaultdir}"
 [ -z "${hostname}" ] && hostname=${defaulthostname}
 [ -z "${hostdns}" ] && hostdns=${nqipaddr}
 [ -z "${ports}" ] && ports=${defaultports}
@@ -287,7 +287,7 @@ nqecho "========================================="
 [ -z "${noninteractive}" ] && {
   nqecho
   nqecho "Press any key to continue..."
-  read review
+  read
 }
 
 # Adjust invalid ports
@@ -305,21 +305,22 @@ nqecho "Installation proceeding..."
   [ -e "${directory}" ] && {
     error "'${directory}' already exists but is a file, not a directory. Exiting."
   } || {
-    mkdir -p ${directory} 2>/dev/null || error "Failed to create install directory: '${directory}'"
+    mkdir -p "${directory}" 2>/dev/null || error "Failed to create install directory: '${directory}'"
     created=1
   }
 }
 
 [ -w "${directory}" ] && {
-  cd ${directory}
+  cd "${directory}"
   directory=$(pwd)
 } || error "You do not have write access to ${directory}. Exiting."
 
 # Search for pak1.pak
 pak=""
 [ "${search}" = "y" ] && {
-  eval path=${path}
-  pak=$(echo $(find ${path} -type f -iname "pak1.pak" -size 33M -exec echo "{}" \; 2> /dev/null) | cut -d " " -f1)
+  eval path="${path}"
+  paks_found=$(find "${path}" -type f -iname "pak1.pak" -size 33M -exec echo "{}" \; 2> /dev/null)
+  pak=$(echo "${paks_found}" | head -n1 )
   [ -n "${pak}" ] && {
     nqecho
     nqecho "* Found pak1.pak at location: ${pak}"
@@ -345,9 +346,10 @@ nqwget -q -O nquake.ini https://raw.githubusercontent.com/nQuake/client-win32/ma
 }
 [ -z "${mirror}" ] && {
   nqnecho "Using mirror: "
-  range=$(expr $(grep "[0-9]\{1,2\}=\".*" nquake.ini | wc -l) + 1)
+  range=$(expr $(grep -c "[0-9]\{1,2\}=\".*" nquake.ini) + 1)
   while [ -z "${mirror}" ]; do
-    number=$((((RANDOM<<15)|RANDOM) % $range + 1))
+    random=$(od -A n -N 2 -t u2 /dev/urandom)
+    number=$((((random<<15)|random) % range + 1))
     mirror=$(grep "^${number}=[fhtp]\{3,4\}://[^ ]*$" nquake.ini | cut -d "=" -f2)
     mirrorname=$(grep "^${number}=\".*" nquake.ini | cut -d "\"" -f2)
   done
@@ -388,75 +390,76 @@ nqecho
 # Extract all the packages
 nqecho "=== Installing ==="
 nqnecho "* Extracting Quake Shareware..."
-(unzip -qqo qsw106.zip ID1/PAK0.PAK 2>/dev/null && nqecho done) || nqecho fail
+(unzip -qqo qsw106.zip ID1/PAK0.PAK 2>/dev/null && nqecho ok) || nqecho fail
 nqnecho "* Extracting nQuakesv setup files (1 of 2)..."
-(unzip -qqo sv-gpl.zip 2>/dev/null && nqecho done) || nqecho fail
+(unzip -qqo sv-gpl.zip 2>/dev/null && nqecho ok) || nqecho fail
 nqnecho "* Extracting nQuakesv setup files (2 of 2)..."
-(unzip -qqo sv-non-gpl.zip 2>/dev/null && nqecho done) || nqecho fail
+(unzip -qqo sv-non-gpl.zip 2>/dev/null && nqecho ok) || nqecho fail
 nqnecho "* Extracting nQuakesv binaries..."
 [ "$binary" = "x86_64" ] && {
-  (unzip -qqo sv-bin-x64.zip 2>/dev/null && nqecho done) || nqecho fail
+  (unzip -qqo sv-bin-x64.zip 2>/dev/null && nqecho ok) || nqecho fail
 } || {
-  (unzip -qqo sv-bin-x86.zip 2>/dev/null && nqecho done) || nqecho fail
+  (unzip -qqo sv-bin-x86.zip 2>/dev/null && nqecho ok) || nqecho fail
 }
 nqnecho "* Extracting nQuakesv configuration files..."
-(unzip -qqo sv-configs.zip 2>/dev/null && nqecho done) || nqecho fail
+(unzip -qqo sv-configs.zip 2>/dev/null && nqecho ok) || nqecho fail
 [ -n "$pak" ] && {
   nqecho "* Copying pak1.pak..."
-  (cp ${pak} ${directory}/id1/pak1.pak 2>/dev/null && nqecho done) || nqecho fail
+  (cp "${pak}" "${directory}/id1/pak1.pak" 2>/dev/null && nqecho ok) || nqecho fail
 }
 nqnecho "* Downloading shell scripts..."
-(githubdl ${directory}/start_servers.sh scripts/start_servers.sh && \
-githubdl ${directory}/stop_servers.sh scripts/stop_servers.sh && \
-githubdl ${directory}/update_binaries.sh scripts/update_binaries.sh && \
-githubdl ${directory}/update_configs.sh scripts/update_configs.sh && \
-githubdl ${directory}/update_maps.sh scripts/update_maps.sh && echo done) || nqecho fail
+(githubdl "${directory}/start_servers.sh" scripts/start_servers.sh && \
+githubdl "${directory}/stop_servers.sh" scripts/stop_servers.sh && \
+githubdl "${directory}/update_binaries.sh" scripts/update_binaries.sh && \
+githubdl "${directory}/update_configs.s"h scripts/update_configs.sh && \
+githubdl "${directory}/update_maps.sh" scripts/update_maps.sh && echo ok) || nqecho fail
 nqecho
 
 # Rename files
 nqecho "=== Cleaning up ==="
 nqnecho "* Renaming files..."
-(mv ${directory}/ID1/PAK0.PAK ${directory}/id1/pak0.pak 2>/dev/null && rm -rf ${directory}/ID1 && nqecho done) || nqecho fail
+(mv "${directory}/ID1/PAK0.PAK" "${directory}/id1/pak0.pa"k 2>/dev/null && rm -rf "${directory}/ID1" && nqecho ok) || nqecho fail
 
 # Remove distribution files
 nqnecho "* Removing distribution files..."
-(rm -rf ${directory}/qsw106.zip ${directory}/sv-gpl.zip ${directory}/sv-non-gpl.zip ${directory}/sv-configs.zip ${directory}/sv-bin-x86.zip ${directory}/sv-bin-x64.zip ${directory}/nquake.ini && nqecho done) || nqecho fail
+(rm -rf "${directory}/qsw106.zip" "${directory}/sv-gpl.zip" "${directory}/sv-non-gpl.zip" "${directory}/sv-configs.zip" "${directory}/sv-bin-x86.zip" "${directory}/sv-bin-x64.zip" "${directory}/nquake.ini" && nqecho ok) || nqecho fail
 
 # Convert DOS files to UNIX
 nqnecho "* Converting DOS files to UNIX..."
-for file in $(find ${directory} -iname "*.cfg" -or -iname "*.txt" -or -iname "*.sh" -or -iname "README"); do
-  [ -f "${file}" ] && sed -i 's/^M//g' ${file}
+for file in $(find "${directory}" -iname "*.cfg" -or -iname "*.txt" -or -iname "*.sh" -or -iname "README"); do
+  [ -f "${file}" ] && sed -i 's/^M//g' "${file}"
 done
 nqecho "done"
 
 # Set the correct permissions
 nqnecho "* Setting permissions..."
-find ${directory} -type f -exec chmod -f 644 "{}" \;
-find ${directory} -type d -exec chmod -f 755 "{}" \;
-chmod -f +x ${directory}/mvdsv 2>/dev/null
-chmod -f +x ${directory}/ktx/mvdfinish.qws 2>/dev/null
-chmod -f +x ${directory}/qtv/qtv.bin 2>/dev/null
-chmod -f +x ${directory}/qwfwd/qwfwd.bin 2>/dev/null
-chmod -f +x ${directory}/*.sh 2>/dev/null
-chmod -f +x ${directory}/run/*.sh 2>/dev/null
-chmod -f +x ${directory}/addons/*.sh 2>/dev/null
+find "${directory}" -type f -exec chmod -f 644 "{}" \;
+find "${directory}" -type d -exec chmod -f 755 "{}" \;
+chmod -f +x "${directory}/mvdsv" 2>/dev/null
+chmod -f +x "${directory}/ktx/mvdfinish.qws" 2>/dev/null
+chmod -f +x "${directory}/qtv/qtv.bin" 2>/dev/null
+chmod -f +x "${directory}/qwfwd/qwfwd.bin" 2>/dev/null
+chmod -f +x "${directory}/*.sh" 2>/dev/null
+chmod -f +x "${directory}/run/*.sh" 2>/dev/null
+chmod -f +x "${directory}/addons/*.sh" 2>/dev/null
 nqecho "done"
 
 # Update configuration files
 nqnecho "* Updating configuration files..."
 mkdir -p ~/.nquakesv
-echo ${directory} > ~/.nquakesv/install_dir
-echo ${remote_ip} > ~/.nquakesv/ip
+echo "${directory}" > ~/.nquakesv/install_dir
+echo "${remote_ip}" > ~/.nquakesv/ip
 echo "${admin} <${email}>" > ~/.nquakesv/admin
 # Generate config file
 echo "SV_HOSTNAME=\"${hostname}\"" > ~/.nquakesv/config
+# shellcheck disable=SC2129
 echo "SV_ADMININFO=\"${admin} <${email}>\"" >> ~/.nquakesv/config
 echo "SV_RCON=\"${rcon}\"" >> ~/.nquakesv/config
 echo "SV_QTVPASS=\"${qtvpass}\"" >> ~/.nquakesv/config
 # qtv
 [ "{$qtv}" = "y" ] && {
   echo 28000 > ~/.nquakesv/qtv
-  ln -s ${directory}/ktx/demos ${directory}/qtv/demos
+  ln -s "${directory}/ktx/demos" "${directory}/qtv/demos"
 } || rm -f ~/.nquakesv/qtv
 # qwfwd
 [ "$qwfwd" = "y" ] && {

@@ -4,17 +4,17 @@
 # by Empezar
 
 # Parameters: --random-mirror --restart --no-restart
-
+TEMPDIR=$(mktemp -d nquake-update_binaries.XXXXXX)
 # Check if unzip is installed
-unzip=`which unzip`
-if [ "$unzip"  = "" ]
+which unzip > /dev/null 2>&1
+if [ ! $? ]
 then
         echo "Unzip is not installed. Please install it and run the nQuakesv installation again."
-        exit
+        exit 1
 fi
 
 # Change folder to nQuakesv
-cd `cat ~/.nquakesv/install_dir`
+cd "$(cat ~/.nquakesv/install_dir)"
 
 # Check if QTV and QWFWD is installed
 if [ -d "qtv" ]; then qtv="1"; fi;
@@ -26,18 +26,15 @@ echo "======================================"
 echo
 
 # What binaries to use
-binary=`uname -i`
+binary=$(uname -i)
 
 # Download nquake.ini
-mkdir tmp
-cd tmp
+cd "${TEMPDIR}"
 wget --inet4-only -q -O nquake.ini http://nquake.sourceforge.net/nquake.ini
-if [ -s "nquake.ini" ]
+if [ ! $? ]
 then
-        echo foo >> /dev/null
-else
         echo "Error: Could not download nquake.ini. Better luck next time. Exiting."
-        exit
+        exit 1
 fi
 
 # List all the available mirrors
@@ -89,9 +86,9 @@ then
                         then
                                 cd ..
                                 read -p "The directory $directory is about to be removed, press Enter to confirm or CTRL+C to exit." remove
-                                rm -rf tmp
+                                rm -rf "${TEMPDIR}"
                         fi
-                        exit
+                        exit 1
                 fi
         else
                 if [ "$(du sv-bin-x64.zip | cut -f1)" \> "0" ]
@@ -104,16 +101,16 @@ then
                         then
                                 cd ..
                                 read -p "The directory $directory is about to be removed, press Enter to confirm or CTRL+C to exit." remove
-                                rm -rf tmp
+                                rm -rf "${TEMPDIR}"
                         fi
-                        exit
+                        exit 1
                 fi
         fi
 else
         echo "Error: The binaries failed to download. Better luck next time. Exiting."
         cd ..
-        rm -rf tmp
-        exit
+        rm -rf "${TEMPDIR}"
+        exit 1
 fi
 
 # Ask to restart servers
@@ -192,7 +189,7 @@ echo "done"
 # Remove temporary directory
 echo -n "* Cleaning up..."
 cd ..
-rm -rf tmp
+rm -rf "${TEMPDIR}"
 echo "done"
 
 # Restart servers
